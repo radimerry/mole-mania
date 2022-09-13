@@ -1,0 +1,129 @@
+/*
+Fixes SGB2 music tempo
+
+
+Avoids sound adjustments based on detected model
+
+
+Thanks to Blaziken257 for the findings
+https://datacrystal.romhacking.net/wiki/Mole_Mania:Notes
+*/
+
+
+org 0x0, 0x0100
+	di
+	jp 0x0150
+
+
+
+
+
+org 0x0, 0x0150
+	ld sp, 0xdffe
+	push af
+
+
+	ld a, 0x01		; bank 01
+	rst 0x10
+
+
+	pop af
+	jp @init_system_model
+
+warnpc 0x015c
+
+
+
+
+
+org 0x0, 0x1568
+	call @sgb_clock_speed
+
+
+
+
+
+; ####################################################################
+
+
+
+
+
+org 0x7, 0x4030
+	ldh a, (0xaa)		; if (model == 00), adjust sgb1 music
+	or a
+	nop
+	jr nz, 0x406b
+
+
+
+
+
+org 0xb, 0x4030
+	ldh a, (0xaa)		; if (model == 00), adjust sgb1 music
+	or a
+	nop
+	jr nz, 0x406b
+
+
+
+
+
+org 0x7, 0x459f
+	ldh a, (0xaa)		; if (model != 00), use dmg music
+	or a
+	nop
+	jr z, 0x45ae
+
+
+
+
+
+org 0xb, 0x459f
+	ldh a, (0xaa)		; if (model != 00), use dmg music
+	or a
+	nop
+	jr z, 0x45ae
+
+
+
+
+
+; #######################################################
+
+
+
+
+
+org 0x1, 0x7fe0
+
+@init_system_model:
+	ldh (0xaa), a		; store system model
+
+	ld a, 0x02
+	call 0x1626
+
+	jp 0x015c
+
+
+
+
+
+@sgb_clock_speed:
+	ldh a, (0xaa)		; sgb1 = 01 / sgb2 = ff
+	dec a
+	ldh (0xaa), a
+
+
+	ld hl, 0xc0a0
+	ret
+
+
+
+
+
+@dmg_clock_speed:
+	; ret			; dmg = 01 / pocket = ff / cgb = 11 / gba = 11
+
+
+warnpc 0x8000
